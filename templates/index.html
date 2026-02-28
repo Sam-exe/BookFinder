@@ -1,0 +1,601 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Boeken Checker</title>
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --accent: #2563eb;
+            --accent-light: #dbeafe;
+            --success: #16a34a;
+            --success-light: #dcfce7;
+            --warn: #d97706;
+            --warn-light: #fef3c7;
+            --danger: #dc2626;
+            --danger-light: #fee2e2;
+            --bg: #f5f5f5;
+            --card: #ffffff;
+            --border: #e5e7eb;
+            --text: #111827;
+            --muted: #6b7280;
+            --radius: 12px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
+
+        /* â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .page { max-width: 640px; margin: 0 auto; padding: 16px; }
+
+        h1 { font-size: 1.4rem; font-weight: 700; }
+        h2 { font-size: 1.15rem; font-weight: 600; }
+        h3 { font-size: 1rem; font-weight: 600; }
+
+        /* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .header { padding: 20px 0 8px; text-align: center; }
+        .header p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+
+        /* â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        }
+
+        /* â”€â”€ Price input â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .price-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .price-row label { font-weight: 500; flex: 1; }
+        .price-row input {
+            width: 100px;
+            padding: 10px 12px;
+            font-size: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+        }
+        .price-row input:focus { outline: none; border-color: var(--accent); }
+
+        /* â”€â”€ Upload buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: opacity .15s, transform .1s;
+            min-height: 52px;
+        }
+        .btn:active { transform: scale(.97); }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-secondary { background: var(--accent-light); color: var(--accent); }
+        .btn-danger { background: var(--danger-light); color: var(--danger); }
+
+        .btn-full { width: 100%; }
+
+        /* hidden file inputs */
+        input[type=file] { display: none; }
+
+        /* â”€â”€ Queue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .queue { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+
+        .photo-thumb {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 2px solid var(--border);
+        }
+        .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .photo-thumb .status-overlay {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            background: rgba(255,255,255,.55);
+        }
+        .photo-thumb.done   { border-color: var(--success); }
+        .photo-thumb.active { border-color: var(--accent); }
+        .photo-thumb.error  { border-color: var(--danger); }
+
+        /* â”€â”€ Progress block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .progress-card { display: none; }
+        .progress-card.visible { display: block; }
+
+        .step-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .step-row:last-child { border-bottom: none; }
+        .step-icon { font-size: 1.2rem; width: 28px; text-align: center; flex-shrink: 0; }
+        .step-text { flex: 1; font-size: 0.9rem; color: var(--muted); }
+        .step-text.active { color: var(--text); font-weight: 500; }
+        .step-text.done   { color: var(--success); }
+
+        .sub-items { padding: 6px 0 0 38px; }
+        .sub-item {
+            font-size: 0.82rem;
+            color: var(--muted);
+            padding: 3px 0;
+        }
+        .sub-item.found  { color: var(--success); }
+        .sub-item.miss   { color: var(--warn); }
+        .sub-item.profit { color: var(--success); font-weight: 500; }
+        .sub-item.skip   { color: var(--muted); font-style: italic; }
+
+        /* â”€â”€ Spinner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .spin {
+            display: inline-block;
+            width: 18px; height: 18px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: rotate .7s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes rotate { to { transform: rotate(360deg); } }
+
+        /* â”€â”€ Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .stat-box {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 12px 8px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        }
+        .stat-box .num { font-size: 1.5rem; font-weight: 700; }
+        .stat-box .lbl { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+        .book-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--success);
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        }
+        .book-card.loading { border-left-color: var(--accent); opacity: .7; }
+        .book-card .title { font-weight: 600; font-size: 1rem; margin-bottom: 2px; }
+        .book-card .author { color: var(--muted); font-size: 0.85rem; margin-bottom: 10px; }
+        .book-card .prices {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pill {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        .pill-green  { background: var(--success-light); color: var(--success); }
+        .pill-blue   { background: var(--accent-light); color: var(--accent); }
+        .pill-yellow { background: var(--warn-light); color: var(--warn); }
+        .pill-mono   { background: var(--bg); color: var(--muted); font-family: monospace; font-weight: 400; }
+
+        /* â”€â”€ Error banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .error-banner {
+            background: var(--danger-light);
+            color: var(--danger);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        /* â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .empty { text-align: center; padding: 32px 16px; color: var(--muted); font-size: 0.95rem; }
+
+        /* â”€â”€ Utility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- Header -->
+    <div class="header">
+        <h1>ðŸ“š Boeken Checker</h1>
+        <p>Foto's van je boeken â†’ winstgevende titels</p>
+    </div>
+
+    <!-- Upload card -->
+    <div class="card" id="uploadCard">
+        <div class="price-row">
+            <label for="purchasePrice">Inkoopprijs per boek</label>
+            <input type="number" id="purchasePrice" value="1.00" step="0.01" min="0.01">
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-primary" id="btnCamera">
+                ðŸ“· Camera
+            </button>
+            <button class="btn btn-secondary" id="btnFile">
+                ðŸ–¼ Foto's kiezen
+            </button>
+        </div>
+
+        <!-- hidden inputs -->
+        <input type="file" id="inputCamera" accept="image/*" capture="environment">
+        <input type="file" id="inputFile"   accept="image/*" multiple>
+
+        <!-- Queue thumbnails -->
+        <div class="queue" id="queue"></div>
+
+        <button class="btn btn-primary btn-full" id="btnStart" disabled>
+            Analyseer boeken
+        </button>
+    </div>
+
+    <!-- Error banner -->
+    <div class="error-banner" id="errorBanner"></div>
+
+    <!-- Live progress -->
+    <div class="card progress-card" id="progressCard">
+        <h3 id="progressTitle">Verwerkenâ€¦</h3>
+        <div id="stepsContainer" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- Results accumulate here -->
+    <div id="resultsArea"></div>
+
+</div>
+
+<script>
+/* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+let photoQueue   = [];   // {file, url, thumbEl, status}
+let currentIndex = -1;
+let allBooks     = [];
+let totalStats   = {detected:0, withIsbn:0, profitable:0};
+
+/* â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const btnCamera    = document.getElementById('btnCamera');
+const btnFile      = document.getElementById('btnFile');
+const inputCamera  = document.getElementById('inputCamera');
+const inputFile    = document.getElementById('inputFile');
+const btnStart     = document.getElementById('btnStart');
+const queueEl      = document.getElementById('queue');
+const errorBanner  = document.getElementById('errorBanner');
+const progressCard = document.getElementById('progressCard');
+const progressTitle= document.getElementById('progressTitle');
+const stepsEl      = document.getElementById('stepsContainer');
+const resultsArea  = document.getElementById('resultsArea');
+
+/* â”€â”€ Upload wiring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+btnCamera.addEventListener('click', () => inputCamera.click());
+btnFile.addEventListener('click',   () => inputFile.click());
+
+inputCamera.addEventListener('change', e => addFiles(e.target.files));
+inputFile.addEventListener('change',   e => addFiles(e.target.files));
+
+function addFiles(fileList) {
+    for (const f of fileList) {
+        if (!f.type.startsWith('image/')) continue;
+        const url = URL.createObjectURL(f);
+        const thumb = createThumb(url, 'â³');
+        photoQueue.push({ file: f, url, thumbEl: thumb, status: 'pending' });
+    }
+    updateStartBtn();
+    // reset inputs so same file can be re-added
+    inputCamera.value = '';
+    inputFile.value = '';
+}
+
+function createThumb(url, icon) {
+    const wrap = document.createElement('div');
+    wrap.className = 'photo-thumb';
+    wrap.innerHTML = `<img src="${url}"><div class="status-overlay">${icon}</div>`;
+    queueEl.appendChild(wrap);
+    return wrap;
+}
+
+function setThumbStatus(item, icon, cls) {
+    item.thumbEl.className = `photo-thumb ${cls}`;
+    item.thumbEl.querySelector('.status-overlay').textContent = icon;
+}
+
+function updateStartBtn() {
+    const hasPending = photoQueue.some(p => p.status === 'pending');
+    btnStart.disabled = !hasPending;
+}
+
+/* â”€â”€ Start processing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+btnStart.addEventListener('click', startQueue);
+
+async function startQueue() {
+    hideError();
+    btnStart.disabled = true;
+    btnCamera.disabled = true;
+    btnFile.disabled = true;
+
+    for (let i = 0; i < photoQueue.length; i++) {
+        if (photoQueue[i].status !== 'pending') continue;
+        await processPhoto(i);
+    }
+
+    // Final summary
+    renderSummary();
+
+    btnCamera.disabled = false;
+    btnFile.disabled = false;
+    updateStartBtn();
+}
+
+/* â”€â”€ Process one photo via SSE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+async function processPhoto(idx) {
+    const item = photoQueue[idx];
+    item.status = 'active';
+    setThumbStatus(item, 'â³', 'active');
+
+    const price = parseFloat(document.getElementById('purchasePrice').value) || 1.0;
+
+    // Build progress UI
+    progressTitle.textContent = `Foto ${idx + 1} / ${photoQueue.length}`;
+    stepsEl.innerHTML = '';
+    progressCard.classList.add('visible');
+
+    const steps = [
+        { id: 'step1', label: 'Boeken herkennen met AI' },
+        { id: 'step2', label: 'ISBN nummers zoeken' },
+        { id: 'step3', label: 'Prijzen bij Boekenbalie' },
+    ];
+    const stepEls = {};
+    for (const s of steps) {
+        const row = document.createElement('div');
+        row.className = 'step-row';
+        row.innerHTML = `<div class="step-icon" id="${s.id}_icon">â³</div>
+                         <div class="step-text" id="${s.id}_text">${s.label}</div>`;
+        stepsEl.appendChild(row);
+
+        const sub = document.createElement('div');
+        sub.className = 'sub-items';
+        sub.id = `${s.id}_sub`;
+        stepsEl.appendChild(sub);
+
+        stepEls[s.id] = { row, sub,
+            icon: document.getElementById(`${s.id}_icon`),
+            text: document.getElementById(`${s.id}_text`),
+        };
+    }
+
+    function setStep(id, st, msg) {
+        const el = stepEls[id];
+        if (!el) return;
+        if (st === 'active') {
+            el.icon.innerHTML = '<div class="spin"></div>';
+            el.text.className = 'step-text active';
+        } else if (st === 'done') {
+            el.icon.textContent = 'âœ…';
+            el.text.className = 'step-text done';
+        } else if (st === 'error') {
+            el.icon.textContent = 'âŒ';
+            el.text.className = 'step-text';
+        }
+        if (msg) el.text.textContent = msg;
+    }
+
+    function addSub(stepId, text, cls) {
+        const el = stepEls[stepId];
+        if (!el) return;
+        const d = document.createElement('div');
+        d.className = `sub-item ${cls}`;
+        d.textContent = text;
+        el.sub.appendChild(d);
+        el.sub.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        return d;
+    }
+
+    // SSE via fetch
+    const formData = new FormData();
+    formData.append('image', item.file);
+    formData.append('purchase_price', price);
+
+    try {
+        const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+        if (!response.ok) { throw new Error(`HTTP ${response.status}`); }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+
+            // Process all complete lines
+            const lines = buf.split('\n');
+            buf = lines.pop();               // keep incomplete tail
+
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                let evt;
+                try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+                handleEvent(evt);
+            }
+        }
+        // flush remainder
+        if (buf.startsWith('data: ')) {
+            try { handleEvent(JSON.parse(buf.slice(6))); } catch {}
+        }
+
+        item.status = 'done';
+        setThumbStatus(item, 'âœ…', 'done');
+    } catch (err) {
+        item.status = 'error';
+        setThumbStatus(item, 'âŒ', 'error');
+        showError(`Foto ${idx + 1}: ${err.message}`);
+        setStep('step1', 'error');
+    }
+
+    // â”€â”€ Event handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    function handleEvent(evt) {
+        switch (evt.type) {
+            case 'status':
+                if (evt.step === 1) setStep('step1', 'active', evt.message);
+                if (evt.step === 2) { setStep('step1', 'done'); setStep('step2', 'active', evt.message); }
+                if (evt.step === 3) { setStep('step2', 'done'); setStep('step3', 'active', evt.message); }
+                break;
+
+            case 'detected':
+                totalStats.detected += evt.count;
+                addSub('step1', `${evt.count} boeken herkend`, evt.count > 0 ? 'found' : 'miss');
+                if (evt.count > 0) setStep('step1', 'done', evt.message);
+                break;
+
+            case 'isbn_progress':
+                addSub('step2', `${evt.index}/${evt.total}: ${evt.title}`, '');
+                break;
+
+            case 'isbn_found':
+                totalStats.withIsbn++;
+                {
+                    const sub = stepEls['step2']?.sub;
+                    if (sub && sub.lastChild) sub.lastChild.className = 'sub-item found';
+                }
+                break;
+
+            case 'isbn_missing':
+                {
+                    const sub = stepEls['step2']?.sub;
+                    if (sub && sub.lastChild) sub.lastChild.className = 'sub-item miss';
+                }
+                break;
+
+            case 'price_progress':
+                addSub('step3', `${evt.index}/${evt.total}: ${evt.title}`, '');
+                break;
+
+            case 'book_result':
+                totalStats.profitable++;
+                {
+                    const sub = stepEls['step3']?.sub;
+                    if (sub && sub.lastChild) {
+                        sub.lastChild.className = 'sub-item profit';
+                        sub.lastChild.textContent += ` â†’ â‚¬${evt.book.sell_price.toFixed(2)}`;
+                    }
+                }
+                allBooks.push(evt.book);
+                renderBook(evt.book);
+                break;
+
+            case 'book_skip':
+                {
+                    const sub = stepEls['step3']?.sub;
+                    if (sub && sub.lastChild) sub.lastChild.className = 'sub-item skip';
+                }
+                break;
+
+            case 'done':
+                setStep('step1', 'done');
+                setStep('step2', 'done');
+                setStep('step3', 'done');
+                break;
+
+            case 'error':
+                showError(evt.message);
+                break;
+        }
+    }
+}
+
+/* â”€â”€ Render helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+function renderBook(book) {
+    const el = document.createElement('div');
+    el.className = 'book-card';
+    el.innerHTML = `
+        <div class="title">${esc(book.title)}</div>
+        <div class="author">${esc(book.author)}</div>
+        <div class="prices">
+            <span class="pill pill-green">+â‚¬${book.profit.toFixed(2)} winst</span>
+            <span class="pill pill-blue">Verkoop â‚¬${book.sell_price.toFixed(2)}</span>
+            <span class="pill pill-yellow">${book.margin_percent.toFixed(0)}% marge</span>
+            <span class="pill pill-mono">${book.isbn}</span>
+        </div>`;
+    resultsArea.prepend(el);
+}
+
+function renderSummary() {
+    // Remove old summary if any
+    document.getElementById('summaryBox')?.remove();
+
+    const box = document.createElement('div');
+    box.id = 'summaryBox';
+    box.innerHTML = `
+        <h2 style="margin-bottom:10px;">Overzicht</h2>
+        <div class="summary-row">
+            <div class="stat-box"><div class="num">${totalStats.detected}</div><div class="lbl">Herkend</div></div>
+            <div class="stat-box"><div class="num">${totalStats.withIsbn}</div><div class="lbl">ISBN</div></div>
+            <div class="stat-box"><div class="num">${totalStats.profitable}</div><div class="lbl">Winstgevend</div></div>
+            <div class="stat-box"><div class="num">${photoQueue.length}</div><div class="lbl">Foto's</div></div>
+        </div>`;
+    resultsArea.insertAdjacentElement('afterbegin', box);
+
+    if (allBooks.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'Geen winstgevende boeken gevonden.';
+        resultsArea.appendChild(empty);
+    }
+}
+
+function showError(msg) {
+    errorBanner.textContent = 'âš  ' + msg;
+    errorBanner.style.display = 'block';
+}
+function hideError() {
+    errorBanner.style.display = 'none';
+}
+function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
