@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+import pathlib
+
+HTML = r"""<!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
@@ -192,20 +194,6 @@
         .pb { background:var(--accent-l); color:var(--accent); }
         .py { background:var(--warn-l);  color:var(--warn); }
         .pm { background:var(--bg);      color:var(--muted); font-family:monospace; font-weight:400; }
-        /* Chance bar */
-        .chance { margin:10px 0 6px; }
-        .chance-label { display:flex; justify-content:space-between; font-size:.78rem; color:var(--muted); margin-bottom:4px; }
-        .chance-bar { height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
-        .chance-fill { height:100%; border-radius:3px; transition:width .6s ease; }
-        /* Editions list */
-        .editions { margin-top:10px; font-size:.82rem; }
-        .editions summary { cursor:pointer; color:var(--accent); font-weight:500; padding:4px 0; list-style:none; }
-        .editions summary::-webkit-details-marker { display:none; }
-        .editions summary::before { content:"\25B6\FE0E\00A0"; font-size:.7rem; }
-        details.editions[open] > summary::before { content:"\25BC\FE0E\00A0"; }
-        .ed-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-top:1px solid var(--border); gap:8px; }
-        .ed-lbl { color:var(--muted); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .ed-badge { flex-shrink:0; font-size:.8rem; }
         .err-banner {
             background:var(--err-l); color:var(--err);
             border-radius:var(--r); padding:14px 16px;
@@ -462,10 +450,7 @@
                     break;
                 case "isbn_found":
                     stats.withIsbn++;
-                    { var s2=sel["s2"]&&sel["s2"].sub; if(s2&&s2.lastChild) {
-                        s2.lastChild.className="sub found";
-                        if (e.edition_count > 1) s2.lastChild.textContent += " (" + e.edition_count + " edities)";
-                    }}
+                    { var s2=sel["s2"]&&sel["s2"].sub; if(s2&&s2.lastChild) s2.lastChild.className="sub found"; }
                     break;
                 case "isbn_missing":
                     { var s2=sel["s2"]&&sel["s2"].sub; if(s2&&s2.lastChild) s2.lastChild.className="sub miss"; }
@@ -503,51 +488,18 @@
             ? "Plank " + shelf + ", positie " + pos + " van links"
             : "Plank " + shelf;
 
-        // Chance bar (only when multiple editions were checked)
-        var chanceHtml = "";
-        var chk = b.editions_checked || 1;
-        var bgt = b.editions_bought  || (b.sell_price > 0 ? 1 : 0);
-        var pct = b.chance_percent   || (b.sell_price > 0 ? 100 : 0);
-        if (chk > 1) {
-            var barClr = pct >= 70 ? "var(--ok)" : pct >= 40 ? "var(--warn)" : "var(--err)";
-            chanceHtml =
-                '<div class="chance">'
-               +'<div class="chance-label">'
-               +'<span>Kans winstgevend</span>'
-               +'<span><strong>'+bgt+'</strong> van '+chk+' edities ('+Math.round(pct)+'%)</span>'
-               +'</div>'
-               +'<div class="chance-bar"><div class="chance-fill" style="width:'+pct+'%;background:'+barClr+';"></div></div>'
-               +'</div>';
-        }
-
-        // Editions detail list
-        var edHtml = "";
-        if (b.all_editions && chk > 1) {
-            var rows = b.all_editions.map(function(ed) {
-                var parts = [ed.publisher, ed.published_date, ed.language].filter(Boolean);
-                var lbl   = parts.length ? parts.join(" \u00B7 ") : ed.isbn;
-                var badge = ed.interested
-                    ? '<span class="ed-badge" style="color:var(--ok)">\u2705 \u20AC'+ed.sell_price.toFixed(2)+'</span>'
-                    : '<span class="ed-badge" style="color:var(--err)">\u274C niet gekocht</span>';
-                return '<div class="ed-row"><span class="ed-lbl">'+esc(lbl)+'</span>'+badge+'</div>';
-            }).join("");
-            edHtml = '<details class="editions"><summary>Alle edities ('+chk+')</summary>'+rows+'</details>';
-        }
-
         var el = document.createElement("div");
         el.className = "bcard";
         el.innerHTML =
             '<div class="ttl">'+esc(b.title)+'</div>'
            +'<div class="aut">'+esc(b.author)+'</div>'
            +'<div class="loc">&#x1F4CD; '+esc(locText)+'</div>'
-           + chanceHtml
            +'<div class="pills">'
            +'<span class="pill pg">+\u20AC'+b.profit.toFixed(2)+' winst</span>'
            +'<span class="pill pb">Verkoop \u20AC'+b.sell_price.toFixed(2)+'</span>'
            +'<span class="pill py">'+b.margin_percent.toFixed(0)+'% marge</span>'
            +'<span class="pill pm">'+b.isbn+'</span>'
-           +'</div>'
-           + edHtml;
+           +'</div>';
         resultsArea.prepend(el);
     }
 
@@ -575,4 +527,11 @@
 })();
 </script>
 </body>
-</html>
+</html>"""
+
+dst = pathlib.Path(r'c:\Users\Sam\Documents\Personal Projects\Boeken\templates\index.html')
+dst.write_text(HTML, encoding='utf-8')
+size  = dst.stat().st_size
+first = dst.read_bytes()[:3]
+has_bom = first == b'\xef\xbb\xbf'
+print(f"Written: {size} bytes, has_BOM: {has_bom}")

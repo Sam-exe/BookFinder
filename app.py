@@ -119,13 +119,14 @@ def analyze():
                 yield sse({'type': 'isbn_progress', 'index': i + 1,
                            'total': len(detected), 'title': title})
 
-                result = isbn_lookup.find_isbn(title, author)
-                if result:
-                    authors = result.get('authors', [])
+                editions = isbn_lookup.find_all_isbns(title, author)
+                if editions:
+                    primary = editions[0]
+                    authors = primary.get('authors', [])
                     books_with_isbn.append({
-                        'title': result.get('title', title),
+                        'title': primary.get('title', title),
                         'author': ', '.join(authors) if authors else (author or 'Onbekend'),
-                        'isbn': result['isbn'],
+                        'isbns': editions,
                         'confidence': book.get('confidence', 0),
                         'detected_title': title,
                         'detected_author': author,
@@ -133,7 +134,9 @@ def analyze():
                         'position': book.get('position', 0),
                     })
                     yield sse({'type': 'isbn_found', 'index': i + 1,
-                               'title': result.get('title', title), 'isbn': result['isbn']})
+                               'title': primary.get('title', title),
+                               'isbn': primary['isbn'],
+                               'edition_count': len(editions)})
                 else:
                     yield sse({'type': 'isbn_missing', 'index': i + 1, 'title': title})
 
@@ -155,33 +158,55 @@ def analyze():
                 yield sse({'type': 'price_progress', 'index': i + 1,
                            'total': len(books_with_isbn), 'title': book['title']})
 
-                res = checker.check_book(isbn=book['isbn'], title=book['title'],
-                                         your_purchase_price=purchase_price)
+                # Check every edition against Boekenbalie
+                edition_results = []
+                for ed in book['isbns']:
+                    res = checker.check_book(isbn=ed['isbn'], title=book['title'],
+                                             your_purchase_price=purchase_price)
+                    interested = bool(res and res.get('boekenbalie_price') is not None)
+                    sell_price = res['boekenbalie_price'] if interested else None
+                    edition_results.append({
+                        'isbn': ed['isbn'],
+                        'publisher': ed.get('publisher', ''),
+                        'published_date': ed.get('published_date', ''),
+                        'language': ed.get('language', ''),
+                        'interested': interested,
+                        'sell_price': sell_price,
+                        'profit': (sell_price - purchase_price) if interested else None,
+                    })
+                    time.sleep(0.1)
 
-                if res and res.get('boekenbalie_price') is not None:
-                    sell = res['boekenbalie_price']
-                    profit = res.get('profit', sell - purchase_price)
-                    margin = res.get('profit_margin',
-                                     (profit / purchase_price * 100) if purchase_price > 0 else 0)
-                    entry = {
-                        'title': book['title'],
-                        'author': book['author'],
-                        'isbn': book['isbn'],
-                        'detected_title': book['detected_title'],
-                        'confidence': book['confidence'],
-                        'shelf': book.get('shelf', 1),
-                        'position': book.get('position', 0),
-                        'purchase_price': purchase_price,
-                        'sell_price': sell,
-                        'profit': profit,
-                        'margin_percent': margin,
-                        'segment': res.get('book_info', {}).get('segment', ''),
-                        'interested': res.get('interested', False),
-                    }
-                    profitable.append(entry)
-                    yield sse({'type': 'book_result', 'book': entry})
-                else:
+                bought = [e for e in edition_results if e['interested']]
+
+                if not bought:
                     yield sse({'type': 'book_skip', 'title': book['title'], 'index': i + 1})
+                    continue
+
+                best = max(bought, key=lambda e: e['sell_price'])
+                sell = best['sell_price']
+                profit = sell - purchase_price
+                margin = (profit / purchase_price * 100) if purchase_price > 0 else 0
+                chance = len(bought) / len(edition_results) * 100
+
+                entry = {
+                    'title': book['title'],
+                    'author': book['author'],
+                    'isbn': best['isbn'],
+                    'detected_title': book['detected_title'],
+                    'confidence': book['confidence'],
+                    'shelf': book.get('shelf', 1),
+                    'position': book.get('position', 0),
+                    'purchase_price': purchase_price,
+                    'sell_price': sell,
+                    'profit': profit,
+                    'margin_percent': margin,
+                    'editions_checked': len(edition_results),
+                    'editions_bought': len(bought),
+                    'chance_percent': chance,
+                    'all_editions': edition_results,
+                }
+                profitable.append(entry)
+                yield sse({'type': 'book_result', 'book': entry})
 
             profitable.sort(key=lambda x: x['profit'], reverse=True)
 

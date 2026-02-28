@@ -129,6 +129,64 @@ class BookISBNLookup:
             print(f"  ❌ Error searching Google Books: {e}")
             return None
     
+    def find_all_isbns(self, title: str, author: str = "") -> List[Dict]:
+        """
+        Find ALL known ISBN editions for a book via Google Books.
+        Returns a deduplicated list of edition dicts sorted by relevance.
+        """
+        query_parts = []
+        if title:
+            query_parts.append(f'intitle:{title}')
+        if author:
+            query_parts.append(f'inauthor:{author}')
+        if not query_parts:
+            return []
+
+        query = '+'.join(query_parts)
+        params = {
+            'q': query,
+            'maxResults': 10,
+            'printType': 'books',
+        }
+
+        self._wait_for_rate_limit()
+
+        try:
+            response = self.session.get(self.GOOGLE_BOOKS_API, params=params, timeout=10)
+            if response.status_code != 200:
+                return []
+            data = response.json()
+            if data.get('totalItems', 0) == 0:
+                return []
+
+            seen = set()
+            editions = []
+            for item in data.get('items', []):
+                vol = item.get('volumeInfo', {})
+                idents = vol.get('industryIdentifiers', [])
+                isbn_13 = next((x['identifier'] for x in idents if x.get('type') == 'ISBN_13'), None)
+                isbn_10 = next((x['identifier'] for x in idents if x.get('type') == 'ISBN_10'), None)
+                isbn = isbn_13 or isbn_10
+                if not isbn or isbn in seen:
+                    continue
+                seen.add(isbn)
+                authors = vol.get('authors', [])
+                editions.append({
+                    'isbn': isbn,
+                    'isbn_13': isbn_13,
+                    'isbn_10': isbn_10,
+                    'title': vol.get('title', title),
+                    'authors': authors,
+                    'publisher': vol.get('publisher', ''),
+                    'published_date': vol.get('publishedDate', ''),
+                    'language': vol.get('language', ''),
+                })
+            return editions
+
+        except Exception as e:
+            print(f"  Error searching Google Books (all editions): {e}")
+            return []
+
     def lookup_books_from_json(self, json_file: str) -> List[Dict]:
         """
         Read books from JSON and find their ISBNs
