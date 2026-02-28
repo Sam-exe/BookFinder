@@ -16,9 +16,9 @@ worker_connections = 1000
 timeout = 300  # 5 minutes – long enough for Gemini + ISBN + Boekenbalie
 keepalive = 5
 
-# Logging
-accesslog = "logs/access.log"
-errorlog = "logs/error.log"
+# Logging — stdout/stderr so Railway/Render capture them automatically
+accesslog = "-"
+errorlog = "-"
 loglevel = "info"
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
 
@@ -27,7 +27,7 @@ proc_name = "book_profitability_checker"
 
 # Server mechanics
 daemon = False
-pidfile = "logs/gunicorn.pid"
+pidfile = None
 umask = 0
 user = None
 group = None
