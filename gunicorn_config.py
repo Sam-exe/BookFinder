@@ -4,8 +4,10 @@ Gunicorn configuration for production deployment
 
 import multiprocessing
 
-# Server socket
-bind = "127.0.0.1:8000"
+import os
+
+# Server socket — bind to 0.0.0.0 using Railway's PORT env var
+bind = f"0.0.0.0:{os.getenv('PORT', '8000')}"
 
 # Worker processes
 # NOTE: SSE streaming keeps a connection open for the full analysis (~min).
