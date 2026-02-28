@@ -1,0 +1,21 @@
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# AI Vision Models
+google-genai>=0.1.0
+Pillow>=10.0.0
+
+# Web Framework
+flask>=3.0.0
+flask-cors>=4.0.0
+python-dotenv>=1.0.0
+gunicorn>=21.2.0  # Production WSGI server
+
+# Computer Vision & OCR
+opencv-python>=4.8.0
+numpy>=1.24.0
+easyocr>=1.7.0
+
+# Optional alternative OCR engines
+# pytesseract>=0.3.10  # Requires Tesseract installation
+# paddleocr>=2.7.0  # Uncomment for PaddleOCR
