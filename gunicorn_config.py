@@ -2,20 +2,16 @@
 Gunicorn configuration for production deployment
 """
 
-import multiprocessing
-
 import os
 
 # Server socket — bind to 0.0.0.0 using Railway's PORT env var
 bind = f"0.0.0.0:{os.getenv('PORT', '8000')}"
 
-# Worker processes
-# NOTE: SSE streaming keeps a connection open for the full analysis (~min).
-# Use a modest worker count so long-running streams don't starve new requests.
-workers = max(2, multiprocessing.cpu_count())
+# Worker processes — keep low to fit Railway's memory limit
+workers = 2
 worker_class = "sync"
 worker_connections = 1000
-timeout = 300  # 5 minutes – long enough for Gemini + ISBN + Boekenbalie
+timeout = 300
 keepalive = 5
 
 # Logging — stdout/stderr so Railway/Render capture them automatically
