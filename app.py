@@ -129,6 +129,8 @@ def analyze():
                         'confidence': book.get('confidence', 0),
                         'detected_title': title,
                         'detected_author': author,
+                        'shelf': book.get('shelf', 1),
+                        'position': book.get('position', 0),
                     })
                     yield sse({'type': 'isbn_found', 'index': i + 1,
                                'title': result.get('title', title), 'isbn': result['isbn']})
@@ -167,6 +169,8 @@ def analyze():
                         'isbn': book['isbn'],
                         'detected_title': book['detected_title'],
                         'confidence': book['confidence'],
+                        'shelf': book.get('shelf', 1),
+                        'position': book.get('position', 0),
                         'purchase_price': purchase_price,
                         'sell_price': sell,
                         'profit': profit,

@@ -1,601 +1,528 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Boeken Checker</title>
     <style>
         :root {
-            --primary: #1a1a2e;
-            --accent: #2563eb;
-            --accent-light: #dbeafe;
-            --success: #16a34a;
-            --success-light: #dcfce7;
-            --warn: #d97706;
-            --warn-light: #fef3c7;
-            --danger: #dc2626;
-            --danger-light: #fee2e2;
-            --bg: #f5f5f5;
-            --card: #ffffff;
-            --border: #e5e7eb;
-            --text: #111827;
-            --muted: #6b7280;
-            --radius: 12px;
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --accent:   #2563eb;
+            --accent-l: #dbeafe;
+            --ok:       #16a34a;
+            --ok-l:     #dcfce7;
+            --warn:     #d97706;
+            --warn-l:   #fef3c7;
+            --err:      #dc2626;
+            --err-l:    #fee2e2;
+            --bg:       #f5f5f5;
+            --card:     #ffffff;
+            --border:   #e5e7eb;
+            --text:     #111827;
+            --muted:    #6b7280;
+            --r:        12px;
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        * { margin:0; padding:0; box-sizing:border-box; }
         html, body {
-            height: 100%;
-            background: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 16px;
-            line-height: 1.5;
+            background: var(--bg); color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 16px; line-height: 1.5;
             -webkit-tap-highlight-color: transparent;
+            padding-bottom: calc(env(safe-area-inset-bottom,0px) + 16px);
         }
-
-        body { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
-
-        /* â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         .page { max-width: 640px; margin: 0 auto; padding: 16px; }
-
         h1 { font-size: 1.4rem; font-weight: 700; }
         h2 { font-size: 1.15rem; font-weight: 600; }
         h3 { font-size: 1rem; font-weight: 600; }
 
-        /* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-        .header { padding: 20px 0 8px; text-align: center; }
-        .header p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+        /* Onboarding overlay */
+        #onboarding {
+            position: fixed; inset: 0; z-index: 100;
+            background: #fff;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 32px 24px; text-align: center;
+            animation: fadeIn .4s ease;
+        }
+        #onboarding.hidden { display: none; }
+        @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+        @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
+        #onboarding.leaving { animation: fadeOut .3s ease forwards; }
 
-        /* â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* Shelf animation */
+        .shelf-anim { width:200px; height:130px; margin-bottom:24px; position:relative; }
+        .shelf-anim .shelf {
+            position:absolute; left:0; right:0;
+            height:3px; background:#c0a070; border-radius:2px;
+        }
+        .shelf-anim .shelf:nth-child(1) { top:30px; }
+        .shelf-anim .shelf:nth-child(2) { top:75px; }
+        .shelf-anim .shelf:nth-child(3) { top:120px; }
+        .shelf-anim .book {
+            position:absolute; bottom:0; width:14px;
+            border-radius:2px 2px 0 0;
+            animation: bookPop .5s ease both;
+        }
+        @keyframes bookPop {
+            from { transform:scaleY(0); transform-origin:bottom; opacity:0; }
+            to   { transform:scaleY(1); transform-origin:bottom; opacity:1; }
+        }
+        .shelf-anim .r1 { bottom:103px; }
+        .shelf-anim .r1.b1  { left:10px;  height:24px; background:#e74c3c; animation-delay:.1s;  }
+        .shelf-anim .r1.b2  { left:26px;  height:20px; background:#3498db; animation-delay:.2s;  }
+        .shelf-anim .r1.b3  { left:42px;  height:26px; background:#2ecc71; animation-delay:.3s;  }
+        .shelf-anim .r1.b4  { left:58px;  height:22px; background:#f39c12; animation-delay:.15s; }
+        .shelf-anim .r1.b5  { left:74px;  height:24px; background:#9b59b6; animation-delay:.25s; }
+        .shelf-anim .r1.b6  { left:90px;  height:20px; background:#1abc9c; animation-delay:.35s; }
+        .shelf-anim .r1.b7  { left:106px; height:25px; background:#e67e22; animation-delay:.2s;  }
+        .shelf-anim .r1.b8  { left:122px; height:21px; background:#34495e; animation-delay:.3s;  }
+        .shelf-anim .r1.b9  { left:138px; height:23px; background:#c0392b; animation-delay:.1s;  }
+        .shelf-anim .r1.b10 { left:154px; height:24px; background:#2980b9; animation-delay:.2s;  }
+        .shelf-anim .r2 { bottom:58px; }
+        .shelf-anim .r2.b1  { left:8px;   height:22px; background:#27ae60; animation-delay:.4s;  }
+        .shelf-anim .r2.b2  { left:24px;  height:25px; background:#e91e63; animation-delay:.5s;  }
+        .shelf-anim .r2.b3  { left:40px;  height:20px; background:#ff9800; animation-delay:.45s; }
+        .shelf-anim .r2.b4  { left:56px;  height:23px; background:#607d8b; animation-delay:.55s; }
+        .shelf-anim .r2.b5  { left:72px;  height:26px; background:#795548; animation-delay:.5s;  }
+        .shelf-anim .r2.b6  { left:88px;  height:21px; background:#00bcd4; animation-delay:.6s;  }
+        .shelf-anim .r2.b7  { left:104px; height:24px; background:#ff5722; animation-delay:.45s; }
+        .shelf-anim .r2.b8  { left:120px; height:22px; background:#4caf50; animation-delay:.5s;  }
+        .shelf-anim .r2.b9  { left:136px; height:20px; background:#9c27b0; animation-delay:.55s; }
+        .shelf-anim .r2.b10 { left:152px; height:25px; background:#f44336; animation-delay:.6s;  }
+        .shelf-anim .r3 { bottom:13px; }
+        .shelf-anim .r3.b1  { left:5px;   height:20px; background:#673ab7; animation-delay:.7s;  }
+        .shelf-anim .r3.b2  { left:21px;  height:23px; background:#03a9f4; animation-delay:.8s;  }
+        .shelf-anim .r3.b3  { left:37px;  height:25px; background:#8bc34a; animation-delay:.75s; }
+        .shelf-anim .r3.b4  { left:53px;  height:21px; background:#ff5722; animation-delay:.85s; }
+        .shelf-anim .r3.b5  { left:69px;  height:24px; background:#ffc107; animation-delay:.8s;  }
+        .shelf-anim .r3.b6  { left:85px;  height:22px; background:#009688; animation-delay:.9s;  }
+        .shelf-anim .r3.b7  { left:101px; height:20px; background:#e91e63; animation-delay:.75s; }
+        .shelf-anim .r3.b8  { left:117px; height:26px; background:#3f51b5; animation-delay:.85s; }
+        .shelf-anim .r3.b9  { left:133px; height:23px; background:#f44336; animation-delay:.8s;  }
+        .shelf-anim .r3.b10 { left:149px; height:21px; background:#689f38; animation-delay:.9s;  }
+
+        .onboarding-title { font-size:1.5rem; font-weight:700; margin-bottom:12px; }
+        .onboarding-tips {
+            list-style:none; text-align:left; margin:16px auto 24px;
+            max-width:300px; display:flex; flex-direction:column; gap:10px;
+        }
+        .onboarding-tips li { display:flex; gap:10px; align-items:flex-start; font-size:.92rem; color:var(--muted); }
+        .onboarding-tips li .ico { font-size:1.2rem; flex-shrink:0; }
+
+        /* App layout */
+        .header { padding:20px 0 8px; text-align:center; }
+        .header p { color:var(--muted); font-size:.9rem; margin-top:4px; }
         .card {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            background:var(--card); border-radius:var(--r); padding:20px; margin-bottom:16px;
+            box-shadow:0 1px 3px rgba(0,0,0,.08);
         }
-
-        /* â”€â”€ Price input â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-        .price-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        .price-row label { font-weight: 500; flex: 1; }
+        .price-row { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+        .price-row label { font-weight:500; flex:1; }
         .price-row input {
-            width: 100px;
-            padding: 10px 12px;
-            font-size: 1rem;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            text-align: center;
+            width:100px; padding:10px 12px; font-size:1rem;
+            border:2px solid var(--border); border-radius:8px; text-align:center;
         }
-        .price-row input:focus { outline: none; border-color: var(--accent); }
-
-        /* â”€â”€ Upload buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-        .btn-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
+        .price-row input:focus { outline:none; border-color:var(--accent); }
+        .btn-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
         .btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 14px 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: opacity .15s, transform .1s;
-            min-height: 52px;
+            display:flex; align-items:center; justify-content:center; gap:8px;
+            padding:14px 10px; font-size:.95rem; font-weight:600;
+            border:none; border-radius:10px; cursor:pointer;
+            transition:opacity .15s, transform .1s; min-height:52px;
         }
-        .btn:active { transform: scale(.97); }
-        .btn:disabled { opacity: .5; cursor: not-allowed; }
-
-        .btn-primary { background: var(--accent); color: #fff; }
-        .btn-secondary { background: var(--accent-light); color: var(--accent); }
-        .btn-danger { background: var(--danger-light); color: var(--danger); }
-
-        .btn-full { width: 100%; }
-
-        /* hidden file inputs */
-        input[type=file] { display: none; }
-
-        /* â”€â”€ Queue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-        .queue { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
-
+        .btn:active { transform:scale(.97); }
+        .btn:disabled { opacity:.5; cursor:not-allowed; }
+        .btn-primary   { background:var(--accent); color:#fff; }
+        .btn-secondary { background:var(--accent-l); color:var(--accent); }
+        .btn-full { width:100%; margin-top:4px; }
+        input[type=file] { display:none; }
+        .queue { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:8px; }
         .photo-thumb {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            border-radius: 8px;
-            overflow: hidden;
-            flex-shrink: 0;
-            border: 2px solid var(--border);
+            position:relative; width:80px; height:80px;
+            border-radius:8px; overflow:hidden; flex-shrink:0;
+            border:2px solid var(--border);
         }
-        .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .photo-thumb .status-overlay {
-            position: absolute; inset: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem;
-            background: rgba(255,255,255,.55);
+        .photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+        .photo-thumb .ov {
+            position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+            font-size:1.4rem; background:rgba(255,255,255,.55);
         }
-        .photo-thumb.done   { border-color: var(--success); }
-        .photo-thumb.active { border-color: var(--accent); }
-        .photo-thumb.error  { border-color: var(--danger); }
-
-        /* â”€â”€ Progress block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-        .progress-card { display: none; }
-        .progress-card.visible { display: block; }
-
+        .photo-thumb.done   { border-color:var(--ok); }
+        .photo-thumb.active { border-color:var(--accent); }
+        .photo-thumb.error  { border-color:var(--err); }
+        .pcarda { display:none; }
+        .pcarda.visible { display:block; }
         .step-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border);
+            display:flex; align-items:center; gap:10px; padding:8px 0;
+            border-bottom:1px solid var(--border);
         }
-        .step-row:last-child { border-bottom: none; }
-        .step-icon { font-size: 1.2rem; width: 28px; text-align: center; flex-shrink: 0; }
-        .step-text { flex: 1; font-size: 0.9rem; color: var(--muted); }
-        .step-text.active { color: var(--text); font-weight: 500; }
-        .step-text.done   { color: var(--success); }
-
-        .sub-items { padding: 6px 0 0 38px; }
-        .sub-item {
-            font-size: 0.82rem;
-            color: var(--muted);
-            padding: 3px 0;
-        }
-        .sub-item.found  { color: var(--success); }
-        .sub-item.miss   { color: var(--warn); }
-        .sub-item.profit { color: var(--success); font-weight: 500; }
-        .sub-item.skip   { color: var(--muted); font-style: italic; }
-
-        /* â”€â”€ Spinner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .step-row:last-child { border-bottom:none; }
+        .step-ico { font-size:1.2rem; width:28px; text-align:center; flex-shrink:0; }
+        .step-txt { flex:1; font-size:.9rem; color:var(--muted); }
+        .step-txt.active { color:var(--text); font-weight:500; }
+        .step-txt.done   { color:var(--ok); }
+        .subs { padding:6px 0 0 38px; }
+        .sub        { font-size:.82rem; color:var(--muted); padding:3px 0; }
+        .sub.found  { color:var(--ok); }
+        .sub.miss   { color:var(--warn); }
+        .sub.profit { color:var(--ok); font-weight:500; }
+        .sub.skip   { font-style:italic; }
         .spin {
-            display: inline-block;
-            width: 18px; height: 18px;
-            border: 3px solid var(--border);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: rotate .7s linear infinite;
-            flex-shrink: 0;
+            display:inline-block; width:18px; height:18px;
+            border:3px solid var(--border); border-top-color:var(--accent);
+            border-radius:50%; animation:rot .7s linear infinite; flex-shrink:0;
         }
-        @keyframes rotate { to { transform: rotate(360deg); } }
-
-        /* â”€â”€ Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-        .summary-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-bottom: 16px;
+        @keyframes rot { to { transform:rotate(360deg); } }
+        .sum-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
+        .sum-box { background:var(--card); border-radius:10px; padding:12px 8px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+        .sum-box .n { font-size:1.5rem; font-weight:700; }
+        .sum-box .l { font-size:.72rem; color:var(--muted); margin-top:2px; }
+        .bcard {
+            background:var(--card); border-radius:var(--r); padding:16px;
+            margin-bottom:12px; border-left:4px solid var(--ok);
+            box-shadow:0 1px 3px rgba(0,0,0,.06);
         }
-        .stat-box {
-            background: var(--card);
-            border-radius: 10px;
-            padding: 12px 8px;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        .bcard .ttl  { font-weight:600; font-size:1rem; margin-bottom:2px; }
+        .bcard .aut  { color:var(--muted); font-size:.85rem; margin-bottom:6px; }
+        .bcard .loc  { font-size:.8rem; color:var(--accent); margin-bottom:8px; font-weight:500; }
+        .bcard .pills { display:flex; gap:8px; flex-wrap:wrap; }
+        .pill { padding:4px 10px; border-radius:20px; font-size:.82rem; font-weight:600; }
+        .pg { background:var(--ok-l);    color:var(--ok); }
+        .pb { background:var(--accent-l); color:var(--accent); }
+        .py { background:var(--warn-l);  color:var(--warn); }
+        .pm { background:var(--bg);      color:var(--muted); font-family:monospace; font-weight:400; }
+        .err-banner {
+            background:var(--err-l); color:var(--err);
+            border-radius:var(--r); padding:14px 16px;
+            margin-bottom:16px; font-size:.9rem; display:none;
         }
-        .stat-box .num { font-size: 1.5rem; font-weight: 700; }
-        .stat-box .lbl { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
-
-        .book-card {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 16px;
-            margin-bottom: 12px;
-            border-left: 4px solid var(--success);
-            box-shadow: 0 1px 3px rgba(0,0,0,.06);
-        }
-        .book-card.loading { border-left-color: var(--accent); opacity: .7; }
-        .book-card .title { font-weight: 600; font-size: 1rem; margin-bottom: 2px; }
-        .book-card .author { color: var(--muted); font-size: 0.85rem; margin-bottom: 10px; }
-        .book-card .prices {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .pill {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.82rem;
-            font-weight: 600;
-        }
-        .pill-green  { background: var(--success-light); color: var(--success); }
-        .pill-blue   { background: var(--accent-light); color: var(--accent); }
-        .pill-yellow { background: var(--warn-light); color: var(--warn); }
-        .pill-mono   { background: var(--bg); color: var(--muted); font-family: monospace; font-weight: 400; }
-
-        /* â”€â”€ Error banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-        .error-banner {
-            background: var(--danger-light);
-            color: var(--danger);
-            border-radius: var(--radius);
-            padding: 14px 16px;
-            margin-bottom: 16px;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        /* â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-        .empty { text-align: center; padding: 32px 16px; color: var(--muted); font-size: 0.95rem; }
-
-        /* â”€â”€ Utility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-        .hidden { display: none !important; }
+        .empty { text-align:center; padding:32px 16px; color:var(--muted); font-size:.95rem; }
     </style>
 </head>
 <body>
-<div class="page">
 
-    <!-- Header -->
-    <div class="header">
-        <h1>ðŸ“š Boeken Checker</h1>
-        <p>Foto's van je boeken â†’ winstgevende titels</p>
+<!-- Onboarding overlay (shown once via localStorage) -->
+<div id="onboarding">
+    <div class="shelf-anim" aria-hidden="true">
+        <div class="shelf"></div><div class="shelf"></div><div class="shelf"></div>
+        <div class="book r1 b1"></div><div class="book r1 b2"></div><div class="book r1 b3"></div>
+        <div class="book r1 b4"></div><div class="book r1 b5"></div><div class="book r1 b6"></div>
+        <div class="book r1 b7"></div><div class="book r1 b8"></div><div class="book r1 b9"></div>
+        <div class="book r1 b10"></div>
+        <div class="book r2 b1"></div><div class="book r2 b2"></div><div class="book r2 b3"></div>
+        <div class="book r2 b4"></div><div class="book r2 b5"></div><div class="book r2 b6"></div>
+        <div class="book r2 b7"></div><div class="book r2 b8"></div><div class="book r2 b9"></div>
+        <div class="book r2 b10"></div>
+        <div class="book r3 b1"></div><div class="book r3 b2"></div><div class="book r3 b3"></div>
+        <div class="book r3 b4"></div><div class="book r3 b5"></div><div class="book r3 b6"></div>
+        <div class="book r3 b7"></div><div class="book r3 b8"></div><div class="book r3 b9"></div>
+        <div class="book r3 b10"></div>
     </div>
 
-    <!-- Upload card -->
-    <div class="card" id="uploadCard">
+    <div class="onboarding-title">&#x1F4DA; Boeken Checker</div>
+    <p style="color:var(--muted);font-size:.95rem;max-width:320px;">
+        Maak foto&#x2019;s van je boekenplank en ontdek welke boeken je kunt verkopen!
+    </p>
+
+    <ul class="onboarding-tips">
+        <li>
+            <span class="ico">&#x1F4F7;</span>
+            <span>Fotografeer <strong>recht van voren</strong> &#x2014; geen scheef hoek</span>
+        </li>
+        <li>
+            <span class="ico">&#x1F4CF;</span>
+            <span>Maximaal <strong>3 planken per foto</strong> voor de beste herkenning</span>
+        </li>
+        <li>
+            <span class="ico">&#x2600;&#xFE0F;</span>
+            <span>Zorg voor <strong>goede verlichting</strong> zodat de titels leesbaar zijn</span>
+        </li>
+        <li>
+            <span class="ico">&#x1F4F1;</span>
+            <span>Je kunt <strong>meerdere foto&#x2019;s</strong> tegelijk uploaden &#x2014; elke foto wordt apart verwerkt</span>
+        </li>
+    </ul>
+
+    <button class="btn btn-primary" id="btnStart2" style="min-width:180px;">Beginnen &rarr;</button>
+</div>
+
+<!-- Main app -->
+<div class="page">
+    <div class="header">
+        <h1>&#x1F4DA; Boeken Checker</h1>
+        <p>Foto&#x2019;s van je boeken &rarr; winstgevende titels</p>
+    </div>
+
+    <div class="card">
         <div class="price-row">
             <label for="purchasePrice">Inkoopprijs per boek</label>
             <input type="number" id="purchasePrice" value="1.00" step="0.01" min="0.01">
         </div>
-
         <div class="btn-row">
-            <button class="btn btn-primary" id="btnCamera">
-                ðŸ“· Camera
-            </button>
-            <button class="btn btn-secondary" id="btnFile">
-                ðŸ–¼ Foto's kiezen
-            </button>
+            <button class="btn btn-primary"   id="btnCamera">&#x1F4F7; Camera</button>
+            <button class="btn btn-secondary" id="btnFile">&#x1F5BC;&#xFE0F; Foto&#x2019;s kiezen</button>
         </div>
-
-        <!-- hidden inputs -->
         <input type="file" id="inputCamera" accept="image/*" capture="environment">
         <input type="file" id="inputFile"   accept="image/*" multiple>
-
-        <!-- Queue thumbnails -->
         <div class="queue" id="queue"></div>
-
-        <button class="btn btn-primary btn-full" id="btnStart" disabled>
-            Analyseer boeken
-        </button>
+        <button class="btn btn-primary btn-full" id="btnStart" disabled>Analyseer boeken</button>
     </div>
 
-    <!-- Error banner -->
-    <div class="error-banner" id="errorBanner"></div>
+    <div class="err-banner" id="errBanner"></div>
 
-    <!-- Live progress -->
-    <div class="card progress-card" id="progressCard">
-        <h3 id="progressTitle">Verwerkenâ€¦</h3>
-        <div id="stepsContainer" style="margin-top:12px;"></div>
+    <div class="card pcarda" id="progressCard">
+        <h3 id="progressTitle">Verwerken&#x2026;</h3>
+        <div id="stepsEl" style="margin-top:12px;"></div>
     </div>
 
-    <!-- Results accumulate here -->
     <div id="resultsArea"></div>
-
 </div>
 
 <script>
-/* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-let photoQueue   = [];   // {file, url, thumbEl, status}
-let currentIndex = -1;
-let allBooks     = [];
-let totalStats   = {detected:0, withIsbn:0, profitable:0};
+(function(){
+    /* Onboarding */
+    var ob = document.getElementById("onboarding");
+    if (localStorage.getItem("ob_done")) { ob.classList.add("hidden"); }
+    document.getElementById("btnStart2").addEventListener("click", function(){
+        ob.classList.add("leaving");
+        setTimeout(function(){ ob.classList.add("hidden"); }, 300);
+        localStorage.setItem("ob_done","1");
+    });
 
-/* â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-const btnCamera    = document.getElementById('btnCamera');
-const btnFile      = document.getElementById('btnFile');
-const inputCamera  = document.getElementById('inputCamera');
-const inputFile    = document.getElementById('inputFile');
-const btnStart     = document.getElementById('btnStart');
-const queueEl      = document.getElementById('queue');
-const errorBanner  = document.getElementById('errorBanner');
-const progressCard = document.getElementById('progressCard');
-const progressTitle= document.getElementById('progressTitle');
-const stepsEl      = document.getElementById('stepsContainer');
-const resultsArea  = document.getElementById('resultsArea');
+    /* State */
+    var queue    = [];
+    var allBooks = [];
+    var stats    = {detected:0, withIsbn:0, profitable:0};
 
-/* â”€â”€ Upload wiring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-btnCamera.addEventListener('click', () => inputCamera.click());
-btnFile.addEventListener('click',   () => inputFile.click());
+    /* DOM */
+    var btnCamera    = document.getElementById("btnCamera");
+    var btnFile      = document.getElementById("btnFile");
+    var inputCamera  = document.getElementById("inputCamera");
+    var inputFile    = document.getElementById("inputFile");
+    var btnStart     = document.getElementById("btnStart");
+    var queueEl      = document.getElementById("queue");
+    var errBanner    = document.getElementById("errBanner");
+    var progressCard = document.getElementById("progressCard");
+    var progressTitle= document.getElementById("progressTitle");
+    var stepsEl      = document.getElementById("stepsEl");
+    var resultsArea  = document.getElementById("resultsArea");
 
-inputCamera.addEventListener('change', e => addFiles(e.target.files));
-inputFile.addEventListener('change',   e => addFiles(e.target.files));
+    btnCamera.addEventListener("click", function(){ inputCamera.click(); });
+    btnFile.addEventListener("click",   function(){ inputFile.click(); });
+    inputCamera.addEventListener("change", function(e){ addFiles(e.target.files); });
+    inputFile.addEventListener("change",   function(e){ addFiles(e.target.files); });
 
-function addFiles(fileList) {
-    for (const f of fileList) {
-        if (!f.type.startsWith('image/')) continue;
-        const url = URL.createObjectURL(f);
-        const thumb = createThumb(url, 'â³');
-        photoQueue.push({ file: f, url, thumbEl: thumb, status: 'pending' });
-    }
-    updateStartBtn();
-    // reset inputs so same file can be re-added
-    inputCamera.value = '';
-    inputFile.value = '';
-}
-
-function createThumb(url, icon) {
-    const wrap = document.createElement('div');
-    wrap.className = 'photo-thumb';
-    wrap.innerHTML = `<img src="${url}"><div class="status-overlay">${icon}</div>`;
-    queueEl.appendChild(wrap);
-    return wrap;
-}
-
-function setThumbStatus(item, icon, cls) {
-    item.thumbEl.className = `photo-thumb ${cls}`;
-    item.thumbEl.querySelector('.status-overlay').textContent = icon;
-}
-
-function updateStartBtn() {
-    const hasPending = photoQueue.some(p => p.status === 'pending');
-    btnStart.disabled = !hasPending;
-}
-
-/* â”€â”€ Start processing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-btnStart.addEventListener('click', startQueue);
-
-async function startQueue() {
-    hideError();
-    btnStart.disabled = true;
-    btnCamera.disabled = true;
-    btnFile.disabled = true;
-
-    for (let i = 0; i < photoQueue.length; i++) {
-        if (photoQueue[i].status !== 'pending') continue;
-        await processPhoto(i);
-    }
-
-    // Final summary
-    renderSummary();
-
-    btnCamera.disabled = false;
-    btnFile.disabled = false;
-    updateStartBtn();
-}
-
-/* â”€â”€ Process one photo via SSE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-async function processPhoto(idx) {
-    const item = photoQueue[idx];
-    item.status = 'active';
-    setThumbStatus(item, 'â³', 'active');
-
-    const price = parseFloat(document.getElementById('purchasePrice').value) || 1.0;
-
-    // Build progress UI
-    progressTitle.textContent = `Foto ${idx + 1} / ${photoQueue.length}`;
-    stepsEl.innerHTML = '';
-    progressCard.classList.add('visible');
-
-    const steps = [
-        { id: 'step1', label: 'Boeken herkennen met AI' },
-        { id: 'step2', label: 'ISBN nummers zoeken' },
-        { id: 'step3', label: 'Prijzen bij Boekenbalie' },
-    ];
-    const stepEls = {};
-    for (const s of steps) {
-        const row = document.createElement('div');
-        row.className = 'step-row';
-        row.innerHTML = `<div class="step-icon" id="${s.id}_icon">â³</div>
-                         <div class="step-text" id="${s.id}_text">${s.label}</div>`;
-        stepsEl.appendChild(row);
-
-        const sub = document.createElement('div');
-        sub.className = 'sub-items';
-        sub.id = `${s.id}_sub`;
-        stepsEl.appendChild(sub);
-
-        stepEls[s.id] = { row, sub,
-            icon: document.getElementById(`${s.id}_icon`),
-            text: document.getElementById(`${s.id}_text`),
-        };
-    }
-
-    function setStep(id, st, msg) {
-        const el = stepEls[id];
-        if (!el) return;
-        if (st === 'active') {
-            el.icon.innerHTML = '<div class="spin"></div>';
-            el.text.className = 'step-text active';
-        } else if (st === 'done') {
-            el.icon.textContent = 'âœ…';
-            el.text.className = 'step-text done';
-        } else if (st === 'error') {
-            el.icon.textContent = 'âŒ';
-            el.text.className = 'step-text';
+    function addFiles(fl) {
+        for (var i=0; i<fl.length; i++) {
+            var f = fl[i];
+            if (!f.type.startsWith("image/")) continue;
+            var url   = URL.createObjectURL(f);
+            var thumb = createThumb(url, "\u23F3");
+            queue.push({ file:f, url:url, thumbEl:thumb, status:"pending" });
         }
-        if (msg) el.text.textContent = msg;
+        updateBtn();
+        inputCamera.value = ""; inputFile.value = "";
+    }
+    function createThumb(url, icon) {
+        var w = document.createElement("div");
+        w.className = "photo-thumb";
+        w.innerHTML = '<img src="'+url+'"><div class="ov">'+icon+'</div>';
+        queueEl.appendChild(w);
+        return w;
+    }
+    function setThumb(item, icon, cls) {
+        item.thumbEl.className = "photo-thumb " + cls;
+        item.thumbEl.querySelector(".ov").textContent = icon;
+    }
+    function updateBtn() {
+        btnStart.disabled = !queue.some(function(p){ return p.status==="pending"; });
     }
 
-    function addSub(stepId, text, cls) {
-        const el = stepEls[stepId];
-        if (!el) return;
-        const d = document.createElement('div');
-        d.className = `sub-item ${cls}`;
-        d.textContent = text;
-        el.sub.appendChild(d);
-        el.sub.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        return d;
+    btnStart.addEventListener("click", startQueue);
+    async function startQueue() {
+        hideErr();
+        btnStart.disabled = true;
+        btnCamera.disabled = true;
+        btnFile.disabled = true;
+        for (var i=0; i<queue.length; i++) {
+            if (queue[i].status !== "pending") continue;
+            await processPhoto(i);
+        }
+        renderSummary();
+        btnCamera.disabled = false;
+        btnFile.disabled = false;
+        updateBtn();
     }
 
-    // SSE via fetch
-    const formData = new FormData();
-    formData.append('image', item.file);
-    formData.append('purchase_price', price);
+    async function processPhoto(idx) {
+        var item  = queue[idx];
+        item.status = "active";
+        setThumb(item, "\u23F3", "active");
+        var price = parseFloat(document.getElementById("purchasePrice").value) || 1.0;
 
-    try {
-        const response = await fetch('/api/analyze', { method: 'POST', body: formData });
-        if (!response.ok) { throw new Error(`HTTP ${response.status}`); }
+        progressTitle.textContent = "Foto " + (idx+1) + " / " + queue.length;
+        stepsEl.innerHTML = "";
+        progressCard.classList.add("visible");
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buf = '';
+        var stepDefs = [
+            { id:"s1", label:"Boeken herkennen met AI" },
+            { id:"s2", label:"ISBN nummers zoeken" },
+            { id:"s3", label:"Prijzen bij Boekenbalie" },
+        ];
+        var sel = {};
+        stepDefs.forEach(function(s){
+            var row = document.createElement("div");
+            row.className = "step-row";
+            row.innerHTML = '<div class="step-ico" id="'+s.id+'_i">\u23F3</div>'
+                          + '<div class="step-txt" id="'+s.id+'_t">'+s.label+'</div>';
+            stepsEl.appendChild(row);
+            var sub = document.createElement("div");
+            sub.className = "subs"; sub.id = s.id+"_s";
+            stepsEl.appendChild(sub);
+            sel[s.id] = {
+                ico: document.getElementById(s.id+"_i"),
+                txt: document.getElementById(s.id+"_t"),
+                sub: document.getElementById(s.id+"_s"),
+            };
+        });
 
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            buf += decoder.decode(value, { stream: true });
+        function setStep(id, st, msg) {
+            var el = sel[id]; if (!el) return;
+            if      (st==="active") { el.ico.innerHTML='<div class="spin"></div>'; el.txt.className="step-txt active"; }
+            else if (st==="done")   { el.ico.textContent="\u2705"; el.txt.className="step-txt done"; }
+            else if (st==="error")  { el.ico.textContent="\u274C"; el.txt.className="step-txt"; }
+            if (msg) el.txt.textContent = msg;
+        }
+        function addSub(sid, text, cls) {
+            var el = sel[sid]; if (!el) return;
+            var d = document.createElement("div");
+            d.className = "sub " + cls; d.textContent = text;
+            el.sub.appendChild(d);
+            el.sub.scrollIntoView({behavior:"smooth",block:"nearest"});
+            return d;
+        }
 
-            // Process all complete lines
-            const lines = buf.split('\n');
-            buf = lines.pop();               // keep incomplete tail
+        var fd = new FormData();
+        fd.append("image", item.file);
+        fd.append("purchase_price", price);
 
-            for (const line of lines) {
-                if (!line.startsWith('data: ')) continue;
-                let evt;
-                try { evt = JSON.parse(line.slice(6)); } catch { continue; }
-                handleEvent(evt);
+        try {
+            var resp = await fetch("/api/analyze", {method:"POST", body:fd});
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
+            var reader  = resp.body.getReader();
+            var decoder = new TextDecoder();
+            var buf = "";
+            while (true) {
+                var rd = await reader.read();
+                if (rd.done) break;
+                buf += decoder.decode(rd.value, {stream:true});
+                var lines = buf.split("\n"); buf = lines.pop();
+                lines.forEach(function(line){
+                    if (!line.startsWith("data: ")) return;
+                    try { handleEvt(JSON.parse(line.slice(6))); } catch(e) {}
+                });
+            }
+            if (buf.startsWith("data: ")) try { handleEvt(JSON.parse(buf.slice(6))); } catch(e) {}
+            item.status = "done"; setThumb(item, "\u2705", "done");
+        } catch(err) {
+            item.status = "error"; setThumb(item, "\u274C", "error");
+            showErr("Foto " + (idx+1) + ": " + err.message);
+            setStep("s1","error");
+        }
+
+        function handleEvt(e) {
+            switch(e.type) {
+                case "status":
+                    if (e.step===1) setStep("s1","active",e.message);
+                    if (e.step===2) { setStep("s1","done"); setStep("s2","active",e.message); }
+                    if (e.step===3) { setStep("s2","done"); setStep("s3","active",e.message); }
+                    break;
+                case "detected":
+                    stats.detected += e.count;
+                    addSub("s1", e.count+" boeken herkend", e.count>0 ? "found" : "miss");
+                    if (e.count>0) setStep("s1","done",e.message);
+                    break;
+                case "isbn_progress":
+                    addSub("s2", e.index+"/"+e.total+": "+e.title, "");
+                    break;
+                case "isbn_found":
+                    stats.withIsbn++;
+                    { var s2=sel["s2"]&&sel["s2"].sub; if(s2&&s2.lastChild) s2.lastChild.className="sub found"; }
+                    break;
+                case "isbn_missing":
+                    { var s2=sel["s2"]&&sel["s2"].sub; if(s2&&s2.lastChild) s2.lastChild.className="sub miss"; }
+                    break;
+                case "price_progress":
+                    addSub("s3", e.index+"/"+e.total+": "+e.title, "");
+                    break;
+                case "book_result":
+                    stats.profitable++;
+                    { var s3=sel["s3"]&&sel["s3"].sub;
+                      if(s3&&s3.lastChild){
+                          s3.lastChild.className="sub profit";
+                          s3.lastChild.textContent += "\u00A0\u2192\u00A0\u20AC" + e.book.sell_price.toFixed(2);
+                      }
+                    }
+                    allBooks.push(e.book); renderBook(e.book);
+                    break;
+                case "book_skip":
+                    { var s3=sel["s3"]&&sel["s3"].sub; if(s3&&s3.lastChild) s3.lastChild.className="sub skip"; }
+                    break;
+                case "done":
+                    setStep("s1","done"); setStep("s2","done"); setStep("s3","done");
+                    break;
+                case "error":
+                    showErr(e.message);
+                    break;
             }
         }
-        // flush remainder
-        if (buf.startsWith('data: ')) {
-            try { handleEvent(JSON.parse(buf.slice(6))); } catch {}
-        }
-
-        item.status = 'done';
-        setThumbStatus(item, 'âœ…', 'done');
-    } catch (err) {
-        item.status = 'error';
-        setThumbStatus(item, 'âŒ', 'error');
-        showError(`Foto ${idx + 1}: ${err.message}`);
-        setStep('step1', 'error');
     }
 
-    // â”€â”€ Event handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    function handleEvent(evt) {
-        switch (evt.type) {
-            case 'status':
-                if (evt.step === 1) setStep('step1', 'active', evt.message);
-                if (evt.step === 2) { setStep('step1', 'done'); setStep('step2', 'active', evt.message); }
-                if (evt.step === 3) { setStep('step2', 'done'); setStep('step3', 'active', evt.message); }
-                break;
+    function renderBook(b) {
+        var shelf   = b.shelf    || 1;
+        var pos     = b.position || 0;
+        var locText = pos > 0
+            ? "Plank " + shelf + ", positie " + pos + " van links"
+            : "Plank " + shelf;
 
-            case 'detected':
-                totalStats.detected += evt.count;
-                addSub('step1', `${evt.count} boeken herkend`, evt.count > 0 ? 'found' : 'miss');
-                if (evt.count > 0) setStep('step1', 'done', evt.message);
-                break;
+        var el = document.createElement("div");
+        el.className = "bcard";
+        el.innerHTML =
+            '<div class="ttl">'+esc(b.title)+'</div>'
+           +'<div class="aut">'+esc(b.author)+'</div>'
+           +'<div class="loc">&#x1F4CD; '+esc(locText)+'</div>'
+           +'<div class="pills">'
+           +'<span class="pill pg">+\u20AC'+b.profit.toFixed(2)+' winst</span>'
+           +'<span class="pill pb">Verkoop \u20AC'+b.sell_price.toFixed(2)+'</span>'
+           +'<span class="pill py">'+b.margin_percent.toFixed(0)+'% marge</span>'
+           +'<span class="pill pm">'+b.isbn+'</span>'
+           +'</div>';
+        resultsArea.prepend(el);
+    }
 
-            case 'isbn_progress':
-                addSub('step2', `${evt.index}/${evt.total}: ${evt.title}`, '');
-                break;
-
-            case 'isbn_found':
-                totalStats.withIsbn++;
-                {
-                    const sub = stepEls['step2']?.sub;
-                    if (sub && sub.lastChild) sub.lastChild.className = 'sub-item found';
-                }
-                break;
-
-            case 'isbn_missing':
-                {
-                    const sub = stepEls['step2']?.sub;
-                    if (sub && sub.lastChild) sub.lastChild.className = 'sub-item miss';
-                }
-                break;
-
-            case 'price_progress':
-                addSub('step3', `${evt.index}/${evt.total}: ${evt.title}`, '');
-                break;
-
-            case 'book_result':
-                totalStats.profitable++;
-                {
-                    const sub = stepEls['step3']?.sub;
-                    if (sub && sub.lastChild) {
-                        sub.lastChild.className = 'sub-item profit';
-                        sub.lastChild.textContent += ` â†’ â‚¬${evt.book.sell_price.toFixed(2)}`;
-                    }
-                }
-                allBooks.push(evt.book);
-                renderBook(evt.book);
-                break;
-
-            case 'book_skip':
-                {
-                    const sub = stepEls['step3']?.sub;
-                    if (sub && sub.lastChild) sub.lastChild.className = 'sub-item skip';
-                }
-                break;
-
-            case 'done':
-                setStep('step1', 'done');
-                setStep('step2', 'done');
-                setStep('step3', 'done');
-                break;
-
-            case 'error':
-                showError(evt.message);
-                break;
+    function renderSummary() {
+        var old = document.getElementById("sumBox"); if (old) old.remove();
+        var box = document.createElement("div"); box.id = "sumBox";
+        box.innerHTML =
+            '<h2 style="margin-bottom:10px;">Overzicht</h2>'
+           +'<div class="sum-row">'
+           +'<div class="sum-box"><div class="n">'+stats.detected+'</div><div class="l">Herkend</div></div>'
+           +'<div class="sum-box"><div class="n">'+stats.withIsbn+'</div><div class="l">ISBN</div></div>'
+           +'<div class="sum-box"><div class="n">'+stats.profitable+'</div><div class="l">Winstgevend</div></div>'
+           +'<div class="sum-box"><div class="n">'+queue.length+'</div><div class="l">Foto\'s</div></div>'
+           +'</div>';
+        resultsArea.insertAdjacentElement("afterbegin", box);
+        if (allBooks.length===0) {
+            var e=document.createElement("div"); e.className="empty";
+            e.textContent="Geen winstgevende boeken gevonden."; resultsArea.appendChild(e);
         }
     }
-}
 
-/* â”€â”€ Render helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-function renderBook(book) {
-    const el = document.createElement('div');
-    el.className = 'book-card';
-    el.innerHTML = `
-        <div class="title">${esc(book.title)}</div>
-        <div class="author">${esc(book.author)}</div>
-        <div class="prices">
-            <span class="pill pill-green">+â‚¬${book.profit.toFixed(2)} winst</span>
-            <span class="pill pill-blue">Verkoop â‚¬${book.sell_price.toFixed(2)}</span>
-            <span class="pill pill-yellow">${book.margin_percent.toFixed(0)}% marge</span>
-            <span class="pill pill-mono">${book.isbn}</span>
-        </div>`;
-    resultsArea.prepend(el);
-}
-
-function renderSummary() {
-    // Remove old summary if any
-    document.getElementById('summaryBox')?.remove();
-
-    const box = document.createElement('div');
-    box.id = 'summaryBox';
-    box.innerHTML = `
-        <h2 style="margin-bottom:10px;">Overzicht</h2>
-        <div class="summary-row">
-            <div class="stat-box"><div class="num">${totalStats.detected}</div><div class="lbl">Herkend</div></div>
-            <div class="stat-box"><div class="num">${totalStats.withIsbn}</div><div class="lbl">ISBN</div></div>
-            <div class="stat-box"><div class="num">${totalStats.profitable}</div><div class="lbl">Winstgevend</div></div>
-            <div class="stat-box"><div class="num">${photoQueue.length}</div><div class="lbl">Foto's</div></div>
-        </div>`;
-    resultsArea.insertAdjacentElement('afterbegin', box);
-
-    if (allBooks.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'empty';
-        empty.textContent = 'Geen winstgevende boeken gevonden.';
-        resultsArea.appendChild(empty);
-    }
-}
-
-function showError(msg) {
-    errorBanner.textContent = 'âš  ' + msg;
-    errorBanner.style.display = 'block';
-}
-function hideError() {
-    errorBanner.style.display = 'none';
-}
-function esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+    function showErr(m) { errBanner.textContent=m; errBanner.style.display="block"; }
+    function hideErr()  { errBanner.style.display="none"; }
+    function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+})();
 </script>
 </body>
 </html>
