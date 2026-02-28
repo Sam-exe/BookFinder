@@ -131,8 +131,10 @@ class BookISBNLookup:
     
     def find_all_isbns(self, title: str, author: str = "") -> List[Dict]:
         """
-        Find ALL known ISBN editions for a book via Google Books.
-        Returns a deduplicated list of edition dicts sorted by relevance.
+        Find all physical ISBN editions for a book via Google Books.
+        Dutch editions are returned first (most likely to be bought by Boekenbalie).
+        Ebooks, audiobooks and digital-only editions are excluded.
+        Two passes: first Dutch-only, then all languages to catch extra editions.
         """
         query_parts = []
         if title:
@@ -143,49 +145,58 @@ class BookISBNLookup:
             return []
 
         query = '+'.join(query_parts)
-        params = {
-            'q': query,
-            'maxResults': 10,
-            'printType': 'books',
-        }
+        seen: set = set()
+        editions: List[Dict] = []
 
-        self._wait_for_rate_limit()
+        def _fetch(extra_params: dict) -> None:
+            params = {
+                'q': query,
+                'maxResults': 10,
+                'printType': 'books',
+                **extra_params,
+            }
+            try:
+                self._wait_for_rate_limit()
+                resp = self.session.get(self.GOOGLE_BOOKS_API, params=params, timeout=10)
+                if resp.status_code != 200:
+                    return
+                data = resp.json()
+                for item in data.get('items', []):
+                    vol = item.get('volumeInfo', {})
+                    # Skip ebooks and audiobooks
+                    if item.get('saleInfo', {}).get('isEbook', False):
+                        continue
+                    if vol.get('printType', 'BOOK') != 'BOOK':
+                        continue
+                    idents = vol.get('industryIdentifiers', [])
+                    isbn_13 = next((x['identifier'] for x in idents if x.get('type') == 'ISBN_13'), None)
+                    isbn_10 = next((x['identifier'] for x in idents if x.get('type') == 'ISBN_10'), None)
+                    isbn = isbn_13 or isbn_10
+                    if not isbn or isbn in seen:
+                        continue
+                    seen.add(isbn)
+                    editions.append({
+                        'isbn': isbn,
+                        'isbn_13': isbn_13,
+                        'isbn_10': isbn_10,
+                        'title': vol.get('title', title),
+                        'authors': vol.get('authors', []),
+                        'publisher': vol.get('publisher', ''),
+                        'published_date': vol.get('publishedDate', ''),
+                        'language': vol.get('language', ''),
+                    })
+            except Exception as e:
+                print(f"  Error searching Google Books editions: {e}")
 
-        try:
-            response = self.session.get(self.GOOGLE_BOOKS_API, params=params, timeout=10)
-            if response.status_code != 200:
-                return []
-            data = response.json()
-            if data.get('totalItems', 0) == 0:
-                return []
+        # Pass 1: Dutch editions first — these are what Boekenbalie typically buys
+        _fetch({'langRestrict': 'nl'})
+        # Pass 2: all other physical editions for a complete picture
+        _fetch({})
 
-            seen = set()
-            editions = []
-            for item in data.get('items', []):
-                vol = item.get('volumeInfo', {})
-                idents = vol.get('industryIdentifiers', [])
-                isbn_13 = next((x['identifier'] for x in idents if x.get('type') == 'ISBN_13'), None)
-                isbn_10 = next((x['identifier'] for x in idents if x.get('type') == 'ISBN_10'), None)
-                isbn = isbn_13 or isbn_10
-                if not isbn or isbn in seen:
-                    continue
-                seen.add(isbn)
-                authors = vol.get('authors', [])
-                editions.append({
-                    'isbn': isbn,
-                    'isbn_13': isbn_13,
-                    'isbn_10': isbn_10,
-                    'title': vol.get('title', title),
-                    'authors': authors,
-                    'publisher': vol.get('publisher', ''),
-                    'published_date': vol.get('publishedDate', ''),
-                    'language': vol.get('language', ''),
-                })
-            return editions
-
-        except Exception as e:
-            print(f"  Error searching Google Books (all editions): {e}")
-            return []
+        # Sort: Dutch editions first, then other languages
+        dutch  = [e for e in editions if e.get('language') == 'nl']
+        others = [e for e in editions if e.get('language') != 'nl']
+        return dutch + others
 
     def lookup_books_from_json(self, json_file: str) -> List[Dict]:
         """
