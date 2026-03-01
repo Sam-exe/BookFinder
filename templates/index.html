@@ -124,6 +124,12 @@
             border:2px solid var(--border); border-radius:8px; text-align:center;
         }
         .price-row input:focus { outline:none; border-color:var(--accent); }
+        .price-row select {
+            padding:10px 12px; font-size:1rem;
+            border:2px solid var(--border); border-radius:8px;
+            background:var(--bg); color:var(--fg); cursor:pointer;
+        }
+        .price-row select:focus { outline:none; border-color:var(--accent); }
         .btn-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
         .btn {
             display:flex; align-items:center; justify-content:center; gap:8px;
@@ -273,6 +279,16 @@
             <label for="purchasePrice">Inkoopprijs per boek</label>
             <input type="number" id="purchasePrice" value="1.00" step="0.01" min="0.01">
         </div>
+        <div class="price-row">
+            <label for="langSelect">Taal van de boeken</label>
+            <select id="langSelect">
+                <option value="nl" selected>Nederlands</option>
+                <option value="en">Engels</option>
+                <option value="de">Duits</option>
+                <option value="fr">Frans</option>
+                <option value="any">Alle talen</option>
+            </select>
+        </div>
         <div class="btn-row">
             <button class="btn btn-primary"   id="btnCamera">&#x1F4F7; Camera</button>
             <button class="btn btn-secondary" id="btnFile">&#x1F5BC;&#xFE0F; Foto&#x2019;s kiezen</button>
@@ -417,9 +433,11 @@
             return d;
         }
 
+        var langSelect = document.getElementById("langSelect");
         var fd = new FormData();
         fd.append("image", item.file);
         fd.append("purchase_price", price);
+        fd.append("language", langSelect ? langSelect.value : "nl");
 
         try {
             var resp = await fetch("/api/analyze", {method:"POST", body:fd});
@@ -481,13 +499,18 @@
                           s3.lastChild.textContent += "\u00A0\u2192\u00A0\u20AC" + e.book.sell_price.toFixed(2);
                       }
                     }
-                    allBooks.push(e.book); renderBook(e.book);
+                    allBooks.push(e.book); resultsArea.prepend(renderBook(e.book));
                     break;
                 case "book_skip":
                     { var s3=sel["s3"]&&sel["s3"].sub; if(s3&&s3.lastChild) s3.lastChild.className="sub skip"; }
                     break;
                 case "done":
                     setStep("s1","done"); setStep("s2","done"); setStep("s3","done");
+                    // Re-render all books sorted by highest margin %
+                    allBooks.sort(function(a,b){ return (b.margin_percent||0)-(a.margin_percent||0); });
+                    var ra = document.getElementById("resultsArea");
+                    ra.innerHTML = "";
+                    allBooks.forEach(function(b){ ra.appendChild(renderBook(b)); });
                     break;
                 case "error":
                     showErr(e.message);
@@ -548,7 +571,7 @@
            +'<span class="pill pm">'+b.isbn+'</span>'
            +'</div>'
            + edHtml;
-        resultsArea.prepend(el);
+        return el;
     }
 
     function renderSummary() {

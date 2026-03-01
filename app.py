@@ -80,6 +80,8 @@ def analyze():
     except ValueError:
         purchase_price = 1.0
 
+    language = request.form.get('language', 'nl')  # ISO 639-1 code or 'any'
+
     filename = secure_filename(file.filename)
     filepath = app.config['UPLOAD_FOLDER'] / f"{int(time.time())}_{filename}"
     file.save(filepath)
@@ -119,7 +121,7 @@ def analyze():
                 yield sse({'type': 'isbn_progress', 'index': i + 1,
                            'total': len(detected), 'title': title})
 
-                editions = isbn_lookup.find_all_isbns(title, author)
+                editions = isbn_lookup.find_all_isbns(title, author, language=language)
                 if editions:
                     primary = editions[0]
                     authors = primary.get('authors', [])
@@ -208,7 +210,7 @@ def analyze():
                 profitable.append(entry)
                 yield sse({'type': 'book_result', 'book': entry})
 
-            profitable.sort(key=lambda x: x['profit'], reverse=True)
+            profitable.sort(key=lambda x: x['margin_percent'], reverse=True)
 
             yield sse({'type': 'done',
                        'summary': {
